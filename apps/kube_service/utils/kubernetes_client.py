@@ -5,9 +5,6 @@ from core.server_settings import server_settings
 
 class KubernetesClient:
     def __init__(self, namespace: str = "default"):
-        """
-        :param namespace: 操作的目标NameSpace
-        """
         self.namespace = namespace
         if server_settings.kube_config_file == "":
             config.load_incluster_config()
