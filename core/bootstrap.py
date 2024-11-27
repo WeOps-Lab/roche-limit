@@ -1,6 +1,7 @@
 import importlib
 import os
-
+from typing import Annotated
+from fastapi import Depends, FastAPI, Header, HTTPException
 import uvicorn
 from loguru import logger
 from core.server_settings import server_settings
@@ -12,7 +13,15 @@ from starlette.middleware.cors import CORSMiddleware
 class Bootstrap:
     def __init__(self):
         load_dotenv()
-        self.app = FastAPI(title=server_settings.app_name)
+
+        if server_settings.token == "":
+            self.app = FastAPI(title=server_settings.app_name)
+        else:
+            self.app = FastAPI(title=server_settings.app_name, dependencies=[Depends(self.verify_token)])
+
+    async def verify_token(self, x_token: Annotated[str, Header()]) -> None:
+        if x_token != server_settings.token:
+            raise HTTPException(status_code=400, detail="Token is invalid")
 
     def setup_middlewares(self):
         self.app.add_middleware(
