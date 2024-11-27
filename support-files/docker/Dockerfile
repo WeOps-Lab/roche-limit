@@ -10,7 +10,7 @@ WORKDIR /app
 ADD . .
 
 ADD support-files/supervisor/service.conf /etc/supervisor/conf.d/service.conf
-RUN pip install -r requirements.txt && rm -Rf requirements.txt
-RUN pip install -r requirements-extra.txt && rm -Rf requirements-extra.txt
+RUN pip install -r ./requirements/requirements.txt
+RUN pip install -r ./requirements/requirements-extra.txt
 
 CMD ["supervisord", "-n"]
