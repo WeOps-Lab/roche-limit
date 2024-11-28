@@ -56,7 +56,6 @@ pipeline {
             steps {
                 script {
                     sh "ansible ${env.ANSIBLE_HOST}  -m shell -a 'chdir=${env.KUBE_DIR}/kube-service/overlays/lite sudo kubectl delete -k . && sudo kubectl apply -k .'"
-                    sh "ansible ${env.ANSIBLE_HOST}  -m shell -a 'chdir=${env.KUBE_DIR}/kube-service/overlays/cwoa sudo kubectl delete -k . && sudo kubectl apply -k .'"
                 }
             }
        }
