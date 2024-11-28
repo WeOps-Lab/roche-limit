@@ -39,7 +39,7 @@ pipeline {
        stage('构建镜像') {
             steps {
                 script {
-                    sh "rm -Rf ./apps/example"
+                    sh "rm -Rf ./apps/example/
                     sh "sudo docker build -f ./support-files/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} ."
                 }
             }
