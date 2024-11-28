@@ -52,6 +52,15 @@ pipeline {
                 }
             }
        }
+
+       stage('更新环境'){
+            steps {
+                script {
+                    sh "ansible ${env.ANSIBLE_HOST}  -m shell -a 'chdir=${env.KUBE_DIR}/overlays/lite sudo kubectl delete -k . && sudo kubectl apply -k .'"
+                    sh "ansible ${env.ANSIBLE_HOST}  -m shell -a 'chdir=${env.KUBE_DIR}/overlays/cwoa sudo kubectl delete -k . && sudo kubectl apply -k .'"
+                }
+            }
+       }
     }
 
     post {
