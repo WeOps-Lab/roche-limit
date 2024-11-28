@@ -1,5 +1,7 @@
 pipeline {
-    label builder
+    agent {
+        label 'builder'
+    }
 
     environment {
         BRANCH_NAME = 'main'
