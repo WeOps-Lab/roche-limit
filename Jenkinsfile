@@ -8,9 +8,8 @@ pipeline {
     }
 
     environment {
-        APP_NAME='kube-service'
-        BRANCH_NAME = ${APP_NAME}
-        IMAGE_NAME = "etherfurnace/${APP_NAME}"
+        BRANCH_NAME = 'kube-service'
+        IMAGE_NAME = "etherfurnace/${BRANCH_NAME}"
         IMAGE_TAG='latest'
     }
 
@@ -23,7 +22,7 @@ pipeline {
                     -d '{
                         "msgtype": "text",
                         "text": {
-                            "content": "[${APP_NAME}]: 🚀 开始构建"
+                            "content": "[${BRANCH_NAME}]: 🚀 开始构建"
                         }
                     }'
                 """
@@ -71,7 +70,7 @@ pipeline {
                 -d '{
                     "msgtype": "text",
                     "text": {
-                        "content": "[${APP_NAME}]: 🎉 构建成功"
+                        "content": "[${BRANCH_NAME}]: 🎉 构建成功"
                     }
                 }'
             """
@@ -83,7 +82,7 @@ pipeline {
                 -d '{
                     "msgtype": "text",
                     "text": {
-                        "content": "[${APP_NAME}]: ❌ 构建失败"
+                        "content": "[${BRANCH_NAME}]: ❌ 构建失败"
                     }
                 }'
             """
