@@ -3,6 +3,11 @@ pipeline {
         label 'builder'
     }
 
+    options {
+        ansiColor('xterm')
+        timestamps()
+    }
+
     environment {
         APP_NAME='roche-limit'
         BRANCH_NAME = 'main'
