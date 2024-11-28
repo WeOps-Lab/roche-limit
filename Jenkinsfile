@@ -9,7 +9,7 @@ pipeline {
 
     environment {
         APP_NAME='kube-service'
-        BRANCH_NAME = 'main'
+        BRANCH_NAME = ${APP_NAME}
         IMAGE_NAME = "etherfurnace/${APP_NAME}"
         IMAGE_TAG='latest'
     }
