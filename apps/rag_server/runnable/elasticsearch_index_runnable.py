@@ -1,10 +1,11 @@
 from langchain_core.runnables import RunnableLambda
 from langchain_elasticsearch import ElasticsearchStore
 
-from embedding.remote_embeddings import RemoteEmbeddings
-from user_types.elasticsearch_store_request import ElasticSearchStoreRequest
 import elasticsearch
 from loguru import logger
+
+from apps.rag_server.user_types.elasticsearch_store_request import ElasticSearchStoreRequest
+from core.embedding.remote_embeddings import RemoteEmbeddings
 
 
 class ElasticSearchIndexRunnable:
