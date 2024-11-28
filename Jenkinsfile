@@ -55,7 +55,7 @@ pipeline {
        stage('更新环境'){
             steps {
                 script {
-                    sh "ansible ${env.ANSIBLE_HOST}  -m shell -a 'chdir=${env.KUBE_DIR}/chunk-server/overlays/lite sudo kubectl delete -k . && sudo kubectl apply -k .'"
+                    sh "ansible ${env.ANSIBLE_HOST}  -m shell -a 'chdir=${env.KUBE_DIR}/rag-server/overlays/lite sudo kubectl delete -k . && sudo kubectl apply -k .'"
                 }
             }
        }
