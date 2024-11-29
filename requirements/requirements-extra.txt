@@ -1,0 +1,4 @@
+langchainhub==0.1.21
+langchain-openai==0.1.19
+httpx-sse==0.4.0
+duckduckgo-search==6.2.9
