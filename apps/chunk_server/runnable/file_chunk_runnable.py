@@ -56,32 +56,14 @@ class FileChunkRunnable(BaseChunkRunnable):
     def _handle_other_file_types(self, content: bytes, file_type: str, pure_filename: str, request: FileChunkRequest) -> \
             List[Document]:
         with tempfile.NamedTemporaryFile(delete=True) as f:
-            if file_type == ".md":
-                return self._convert_markdown_to_docx(f, content, pure_filename, file_type)
-
             f.write(content)
             loader = self._get_loader_by_file_type(f.name, file_type, request)
             docs = loader.load()
             return self.parse_docs(docs, request)
 
-    def _convert_markdown_to_docx(self, f, content: bytes, pure_filename: str, file_type: str) -> List[Document]:
-        try:
-            logger.debug(f"[{pure_filename}]格式为Markdown,转换Word格式")
-            response = requests.post(
-                f"{server_settings.pandoc_server_host}/convert",
-                data={"output": "docx"},
-                files={"file": (pure_filename + file_type, content)},
-            )
-            response.raise_for_status()
-            f.write(response.content)
-            loader = DocLoader(f.name)
-        except Exception as e:
-            logger.warning("Markdown转Word失败，使用普通文本解析")
-            f.write(content)
-            loader = TextLoader(f.name)
-        return loader.load()
-
     def _get_loader_by_file_type(self, file_path: str, file_type: str, request: FileChunkRequest):
+        if file_type == ".md":
+            return TextLoader(file_path)
         if file_type in [".ppt", ".pptx"]:
             return PPTLoader(file_path)
         elif file_type == ".pdf":
