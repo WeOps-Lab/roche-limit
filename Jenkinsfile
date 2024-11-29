@@ -8,10 +8,9 @@ pipeline {
     }
 
     environment {
-        APP_NAME='roche-limit'
-        BRANCH_NAME = 'main'
-        IMAGE_NAME = "etherfurnace/${APP_NAME}"
-        IMAGE_TAG='main-1.0.0'
+        BRANCH_NAME = 'ocr-server'
+        IMAGE_NAME = "etherfurnace/${BRANCH_NAME}"
+        IMAGE_TAG='latest'
     }
 
     stages {
@@ -23,7 +22,7 @@ pipeline {
                     -d '{
                         "msgtype": "text",
                         "text": {
-                            "content": "[${APP_NAME}]: 🚀 开始构建"
+                            "content": "[${BRANCH_NAME}]: 🚀 开始构建"
                         }
                     }'
                 """
@@ -39,6 +38,11 @@ pipeline {
        stage('构建镜像') {
             steps {
                 script {
+                    sh "rm -Rf ./apps/example/"
+                    sh "mkdir -p models"
+                    sh "cp -Rf ${env.MODEL_DIR}/ch_PP-OCRv4_det_infer ./models"
+                    sh "cp -Rf ${env.MODEL_DIR}/ch_PP-OCRv4_rec_infer ./models"
+                    sh "cp -Rf ${env.MODEL_DIR}/ch_ppocr_mobile_v2.0_cls_infer ./models"
                     sh "sudo docker build -f ./support-files/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} ."
                 }
             }
@@ -48,6 +52,14 @@ pipeline {
             steps {
                 script {
                     sh "sudo docker push  ${IMAGE_NAME}:${IMAGE_TAG}"
+                }
+            }
+       }
+
+       stage('更新环境'){
+            steps {
+                script {
+                    sh "ansible ${env.ANSIBLE_HOST}  -m shell -a 'chdir=${env.KUBE_DIR}/ocr-server/overlays/lite sudo kubectl delete -k . && sudo kubectl apply -k .'"
                 }
             }
        }
@@ -61,7 +73,7 @@ pipeline {
                 -d '{
                     "msgtype": "text",
                     "text": {
-                        "content": "[${APP_NAME}]: 🎉 构建成功"
+                        "content": "[${BRANCH_NAME}]: 🎉 构建成功"
                     }
                 }'
             """
@@ -73,7 +85,7 @@ pipeline {
                 -d '{
                     "msgtype": "text",
                     "text": {
-                        "content": "[${APP_NAME}]: ❌ 构建失败"
+                        "content": "[${BRANCH_NAME}]: ❌ 构建失败"
                     }
                 }'
             """
