@@ -10,9 +10,10 @@ WORKDIR /app
 ADD . .
 
 ADD support-files/supervisor/service.conf /etc/supervisor/conf.d/service.conf
-RUN pip install -r ./requirements/requirements.txt
-RUN pip install -r ./requirements/requirements-extra.txt
+
+RUN pip install pip-tools
+RUN pip-compile ./requirements/requirements.txt ./requirements/requirements-extra.txt -v --output-file ./requirements.txt
+RUN pip install -r requirements.txt
 ADD https://paddleocr.bj.bcebos.com/ppstructure/models/slanet/ch_ppstructure_mobile_v2.0_SLANet_infer.tar /root/.paddleocr/whl/table/ch_ppstructure_mobile_v2.0_SLANet_infer/ch_ppstructure_mobile_v2.0_SLANet_infer.tar
 ADD https://paddleocr.bj.bcebos.com/ppstructure/models/layout/picodet_lcnet_x1_0_fgd_layout_cdla_infer.tar /root/.paddleocr/whl/layout/picodet_lcnet_x1_0_fgd_layout_cdla_infer/picodet_lcnet_x1_0_fgd_layout_cdla_infer.tar
-
 CMD ["supervisord", "-n"]
