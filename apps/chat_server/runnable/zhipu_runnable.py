@@ -1,6 +1,8 @@
 from langchain_core.runnables import RunnableLambda
 
 from apps.chat_server.runnable.runnable_mixin import RunnableMixin
+from apps.chat_server.user_types.zhipu_chat_request import ZhipuChatRequest
+from apps.chat_server.utils.zhipu_driver import ZhipuDriver
 
 
 class ZhipuRunnable(RunnableMixin):
