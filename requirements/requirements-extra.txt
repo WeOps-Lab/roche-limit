@@ -1,1 +1,2 @@
 bcembedding==0.1.5
+httpx==0.27.2
