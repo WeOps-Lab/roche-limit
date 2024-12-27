@@ -7,6 +7,8 @@ class ServerSettings(BaseSettings):
     app_port: int = 8000
     token: str = ""
 
+    secret_key: str = ""
+
     class Config:
         env_file = ".env"
 
