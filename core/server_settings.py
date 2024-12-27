@@ -8,6 +8,8 @@ class ServerSettings(BaseSettings):
     token: str = ""
     inventory_dir: str = "/tmp/inventory"
     secret_key: str = ""
+    playbook_path: str = "./playbooks"
+    private_data_dir: str = "/tmp/"
 
     class Config:
         env_file = ".env"

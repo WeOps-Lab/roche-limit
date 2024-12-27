@@ -1,0 +1,23 @@
+---
+- name: Check Host Connectivity
+  hosts: localhost
+  gather_facts: false
+  vars:
+    reachable: []
+
+  tasks:
+  - name: Ping Test
+    shell: "ping -c 1 -W {{ timeout }} {{ item }} > /dev/null 2>&1"
+    register: ping_result
+    ignore_errors: True
+    loop: "{{ ips }}"
+
+  - name: Update Reachable Host List
+    set_fact:
+      reachable: "{{ reachable + [item.item] }}"
+    when: item.rc == 0
+    loop: "{{ ping_result.results }}"
+
+  - name: Print Reachable Host List
+    debug:
+      var: reachable
