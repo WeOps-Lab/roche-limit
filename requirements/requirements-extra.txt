@@ -1,1 +1,2 @@
-pycrypto==2.6.1
+pycryptodome==3.21.0
+ansible_runner==2.4.0

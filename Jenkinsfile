@@ -8,10 +8,10 @@ pipeline {
     }
 
     environment {
-        APP_NAME='roche-limit'
-        BRANCH_NAME = 'main'
+        APP_NAME='auto-mate'
+        BRANCH_NAME = 'auto-mate'
         IMAGE_NAME = "etherfurnace/${APP_NAME}"
-        IMAGE_TAG='main-1.0.0'
+        IMAGE_TAG='latest'
     }
 
     stages {
@@ -39,6 +39,7 @@ pipeline {
        stage('构建镜像') {
             steps {
                 script {
+                    sh "rm -Rf ./apps/example/"
                     sh "sudo docker build -f ./support-files/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} ."
                 }
             }
