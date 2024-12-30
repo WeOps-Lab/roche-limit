@@ -96,6 +96,8 @@ class AnsibleRunnable:
         {
             "playbook_name":"ping_scan",
             "timeout":10,
+            "host_pattern":"",
+            "inventory":[],
             "extra_vars":{
                 "ips": [
                     "127.0.0.1"
@@ -107,11 +109,15 @@ class AnsibleRunnable:
         :return:
         """
         playbook_config = self.process_content(content)
+        inventory = parse_obj_as(List[Inventory], playbook_config["inventory"])
+        inventory_str = self.build_inventory(inventory)
 
         with tempfile.TemporaryDirectory() as tempdir:
             rc = ansible_runner.RunnerConfig(
                 private_data_dir=tempdir,
+                host_pattern=playbook_config["host_pattern"],
                 playbook=f"{server_settings.playbook_path}/{playbook_config['playbook_name']}/main.yml",
+                inventory=inventory_str,
                 timeout=playbook_config["timeout"],
                 extravars=playbook_config['extra_vars']
             )
