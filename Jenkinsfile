@@ -55,10 +55,19 @@ pipeline {
             }
        }
 
-       stage('更新环境'){
+        stage('更新环境'){
+            agent { 
+                label 'docker' 
+            }
+            options {
+                skipDefaultCheckout true
+            }
             steps {
                 script {
-                    sh "ansible ${env.ANSIBLE_HOST}  -m shell -a 'chdir=${env.KUBE_DIR}/bce-embed-server/overlays/lite sudo kubectl delete -k . && sudo kubectl apply -k .'"
+                    sh """
+                    docker pull ${IMAGE_NAME}:${IMAGE_TAG}
+                    docker restart bce-embed-server
+                    """
                 }
             }
        }
