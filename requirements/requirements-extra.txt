@@ -1,1 +1,2 @@
 fastembed==0.3.4
+httpx==0.27.2
