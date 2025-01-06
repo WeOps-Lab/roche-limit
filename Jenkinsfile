@@ -66,7 +66,13 @@ pipeline {
                 script {
                     sh """
                     docker pull ${IMAGE_NAME}:${IMAGE_TAG}
-                    docker restart bce-embed-server
+                    docker stop bce-embed-server || true
+                    docker rm bce-embed-server || true
+                    docker run -itd --name bce-embed-server --restart always \
+                        --network lite \
+                        -e APP_NAME=bce-embed-server \
+                        -e APP_PORT=80 \
+                        etherfurnace/bce-embed-server
                     """
                 }
             }
