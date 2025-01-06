@@ -65,7 +65,13 @@ pipeline {
                 script {
                     sh """
                     docker pull ${IMAGE_NAME}:${IMAGE_TAG}
-                    docker restart fast-embed-server
+                    docker stop fast-embed-server||true
+                    docker rm fast-embed-server||true
+                    docker run -itd --name fast-embed-server --restart always \
+                        --network lite \
+                        -e APP_NAME=fast-embed-server \
+                        -e APP_PORT=80 \
+                        etherfurnace/fast-embed-server
                     """
                 }
             }
