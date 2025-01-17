@@ -52,10 +52,26 @@ pipeline {
             }
        }
 
+
        stage('更新环境'){
+            agent {
+                label 'docker'
+            }
+            options {
+                skipDefaultCheckout true
+            }
             steps {
                 script {
-                    sh "ansible ${env.ANSIBLE_HOST}  -m shell -a 'chdir=${env.KUBE_DIR}/chunk-server/overlays/lite sudo kubectl delete -k . && sudo kubectl apply -k .'"
+                    sh """
+                        docker pull ${IMAGE_NAME}:${IMAGE_TAG}
+                        docker stop chunk-server || true
+                        docker rm chunk-server|| true
+                        docker run -itd --name chunk-server --restart always \
+                                --network lite \
+                                -e APP_NAME=chunk-server \
+                                -e APP_PORT=80 \
+                                etherfurnace/chunk-server
+                    """
                 }
             }
        }
