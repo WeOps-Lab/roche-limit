@@ -52,10 +52,26 @@ pipeline {
             }
        }
 
+
        stage('更新环境'){
+            agent {
+                label 'docker'
+            }
+            options {
+                skipDefaultCheckout true
+            }
             steps {
                 script {
-                    sh "ansible ${env.ANSIBLE_HOST}  -m shell -a 'chdir=${env.KUBE_DIR}/chat-server/overlays/lite sudo kubectl delete -k . && sudo kubectl apply -k .'"
+                    sh """
+                        docker pull ${IMAGE_NAME}:${IMAGE_TAG}
+                        docker stop chat-server || true
+                        docker rm chat-server|| true
+                        docker run -itd --name chat-server --restart always \
+                                --network lite \
+                                -e APP_NAME=chat-server \
+                                -e APP_PORT=80 \
+                                etherfurnace/chat-server
+                    """
                 }
             }
        }
