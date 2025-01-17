@@ -52,10 +52,38 @@ pipeline {
             }
        }
 
-       stage('更新环境'){
+       stage('更新云环境'){
             steps {
                 script {
-                    sh "ansible ${env.ANSIBLE_HOST}  -m shell -a 'chdir=${env.KUBE_DIR}/rag-server/overlays/lite sudo kubectl delete -k . && sudo kubectl apply -k .'"
+                    sh """
+                        cd ${env.KUBE_DIR}/rag-server/overlays/lite/ && \
+                            sudo kubectl delete -k . || true &&\
+                            sudo kubectl apply -k .
+                    """
+                }
+            }
+       }
+
+
+       stage('更新环境'){
+            agent {
+                label 'docker'
+            }
+            options {
+                skipDefaultCheckout true
+            }
+            steps {
+                script {
+                    sh """
+                        docker pull ${IMAGE_NAME}:${IMAGE_TAG}
+                        docker stop rag-server || true
+                        docker rm rag-server|| true
+                        docker run -itd --name rag-server --restart always \
+                                --network lite \
+                                -e APP_NAME=rag-server \
+                                -e APP_PORT=80 \
+                                etherfurnace/rag-server
+                    """
                 }
             }
        }
