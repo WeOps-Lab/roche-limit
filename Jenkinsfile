@@ -59,7 +59,11 @@ pipeline {
        stage('更新环境'){
             steps {
                 script {
-                    sh "ansible ${env.ANSIBLE_HOST}  -m shell -a 'chdir=${env.KUBE_DIR}/ocr-server/overlays/lite sudo kubectl delete -k . && sudo kubectl apply -k .'"
+                    sh """
+                        cd ${env.KUBE_DIR}/ocr-server/overlays/lite/ && \
+                            sudo kubectl delete -k . || true &&\
+                            sudo kubectl apply -k .
+                    """
                 }
             }
        }
