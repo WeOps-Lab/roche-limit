@@ -9,7 +9,7 @@ RUN rm -Rf /etc/apt/sources.list.d \
 
 
 RUN apt-get update && \
-    apt-get install -y libhdf5-dev vim python3 python3-pip unzip curl pkg-config libssl-dev libffi-dev supervisor && \
+    apt-get install -y libhdf5-dev vim  unzip curl pkg-config libssl-dev libffi-dev supervisor && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
