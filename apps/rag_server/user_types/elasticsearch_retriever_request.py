@@ -4,7 +4,7 @@ from apps.rag_server.user_types.elasticsearch_request import ElasticSearchReques
 class ElasticSearchRetrieverRequest(ElasticSearchRequest):
     index_name: str
     search_query: str
-    size: int = 10
+    size: int = 100
     metadata_filter: dict = {}
 
     enable_term_search: bool = True

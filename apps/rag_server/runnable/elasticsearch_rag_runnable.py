@@ -32,9 +32,32 @@ def vector_query(
             raise ValueError(f"Unsupported metadata filter type for key {key}: {type(value)}")
 
     if req.enable_term_search is True:
+        title_query = {
+            "bool": {
+                "should": [
+                    {
+                        req.text_search_mode: {
+                            "metadata.knowledge_title": {
+                                "query": req.search_query,
+                                "boost": 2.0
+                            }
+                        }
+                    },
+                    {
+                        req.text_search_mode: {
+                            "text": {
+                                "query": req.search_query,
+                                "boost": 1.0
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+
         es_query["query"] = {
             "bool": {
-                "must": {req.text_search_mode: {"text": req.search_query}},
+                "must": [title_query],
                 "filter": metadata_filter,
                 "boost": req.text_search_weight,
             }
