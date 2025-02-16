@@ -104,4 +104,11 @@ Thought:{agent_scratchpad}
         except Exception as e:
             # log traceback
             logger.exception(e)
-            return "服务端异常"
+            return json.dumps({
+                "result": False,
+                "data": {
+                    "content": "大模型限流，请重试....",
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                }
+            })
