@@ -4,6 +4,7 @@ from langserve import CustomUserType
 class StartPilotRequest(CustomUserType):
     pilot_id: str
     api_key: str
+    replicas: int = 1
     namespace: str = "lite"
     munchkin_url: str = "http://munchkin"
     rabbitmq_host: str = "rabbitmq-service"

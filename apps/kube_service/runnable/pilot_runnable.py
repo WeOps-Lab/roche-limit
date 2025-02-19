@@ -3,11 +3,10 @@ from typing import List
 import yaml
 from langchain_core.runnables import RunnableLambda
 from langserve import add_routes
+from loguru import logger
 
 from apps.kube_service.user_types.pilot import ListPilotRequest, PilotInfo, StartPilotRequest, StopPilotRequest
 from apps.kube_service.utils.kubernetes_client import KubernetesClient
-from loguru import logger
-
 from core.utils.template_loader import core_template
 
 
@@ -34,6 +33,7 @@ class PilotRunnable:
         dynamic_dict = {
             "bot_id": req.pilot_id,
             "api_key": req.api_key,
+            "replicas": req.replicas,
             "base_url": req.munchkin_url,
             "rabbitmq_host": req.rabbitmq_host,
             "rabbitmq_port": req.rabbitmq_port,
