@@ -57,6 +57,7 @@ class FileChunkRunnable(BaseChunkRunnable):
             List[Document]:
         with tempfile.NamedTemporaryFile(delete=True) as f:
             f.write(content)
+            f.flush()
             loader = self._get_loader_by_file_type(f.name, file_type, request)
             docs = loader.load()
             return self.parse_docs(docs, request)

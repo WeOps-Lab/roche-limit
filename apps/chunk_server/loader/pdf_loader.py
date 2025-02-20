@@ -4,12 +4,12 @@ from io import BytesIO
 from typing import List
 
 import fitz
-import pdfplumber
 from langchain_core.documents import Document
 from langserve import RemoteRunnable
 from loguru import logger
 from tqdm import tqdm
-
+from tabula.io import read_pdf
+import pandas as pd
 
 class PDFLoader:
 
@@ -18,30 +18,46 @@ class PDFLoader:
         self.ocr_provider_address = ocr_provider_address
         self.enable_ocr_parse = enable_ocr_parse
 
-    def table_to_markdown(self, table: List[List[str]]) -> str:
-        # 清理数据并创建Markdown表格
-        markdown_table = "| " + " | ".join(
-            (cell or "").replace("\n", " ") for cell in table[0]) + " |\n"  # table headers
-        markdown_table += "|---" * len(table[0]) + "|\n"  # table header-row separator
-
-        for row in table[1:]:
-            markdown_table += "| " + " | ".join(
-                (cell or "").replace("\n", " ") if cell else "" for cell in row) + " |\n"
-
-        return markdown_table
 
     def remove_unicode_chars(self, text):
         return re.sub(r'\\u[fF]{1}[0-9a-fA-F]{3}', '', text)
+
+    def _get_table_areas(self, pdf):
+        """获取所有页面的表格区域"""
+        table_areas = []
+        for page in pdf:
+            # 使用 fitz 的表格检测功能
+            tables = page.find_tables()
+            if tables and tables.tables:
+                for table in tables.tables:
+                    # 保存表格的边界框
+                    table_areas.append((page.number, table.bbox))
+        return table_areas
+
+    def _is_in_table_area(self, page_num, bbox, table_areas):
+        """检查文本块是否在任何表格区域内"""
+        x0, y0, x1, y1 = bbox
+        for page_number, table_bbox in table_areas:
+            if page_num == page_number:
+                tx0, ty0, tx1, ty1 = table_bbox
+                # 检查重叠
+                if (x0 < tx1 and x1 > tx0 and y0 < ty1 and y1 > ty0):
+                    return True
+        return False
 
     def load(self) -> List[Document]:
 
         table_docs = []
         text_docs = []
 
-        if self.enable_ocr_parse:
-            file_remote = RemoteRunnable(self.ocr_provider_address)
-            # 解析图片
-            with fitz.Document(self.file_path) as pdf:
+        with fitz.open(self.file_path) as pdf:
+            # 首先获取所有表格区域
+            table_areas = self._get_table_areas(pdf)
+            
+            # OCR处理部分保持不变
+            if self.enable_ocr_parse:
+                file_remote = RemoteRunnable(self.ocr_provider_address)
+                # 解析图片
                 for page_number in tqdm(range(1, len(pdf) + 1), desc=f"解析PDF图片[{self.file_path}]"):
                     page = pdf[page_number - 1]
                     for image_number, image in enumerate(page.get_images(), start=1):
@@ -60,32 +76,31 @@ class PDFLoader:
                                 doc.metadata["format"] = "image"
                                 text_docs.append(doc)
 
-        with pdfplumber.open(self.file_path) as pdf:
-
-            # 解析文本
+            # 解析文本，跳过表格区域
             full_text = ""
-            for page in tqdm(pdf.pages, desc=f"解析PDF文本[{self.file_path}]"):
-                raw_text = page.extract_text().replace("\n", " ").strip()
-                raw_text = self.remove_unicode_chars(raw_text)
-                if raw_text != '':
-                    full_text += raw_text
+            for page in tqdm(pdf, desc=f"解析PDF文本[{self.file_path}]"):
+                page_dict = page.get_text("dict")
+                for block in page_dict["blocks"]:
+                    if block["type"] == 0:  # 文本块
+                        if not self._is_in_table_area(page.number, block["bbox"], table_areas):
+                            for line in block["lines"]:
+                                for span in line["spans"]:
+                                    text = span["text"].strip()
+                                    if text:
+                                        text = self.remove_unicode_chars(text)
+                                        full_text += text + " "
 
             if full_text:
-                text_docs.append(Document(full_text))
+                text_docs.append(Document(full_text.strip()))
 
-            # 解析表格
-            for page in tqdm(pdf.pages, desc=f"解析PDF表格[{self.file_path}]"):
-                table_list = page.extract_tables()
-                for table in table_list:
-                    if table is not None:
-                        # 如果表格的所有单元格都为空或None，跳过这个表格
-                        if all(not cell or cell.isspace() for row in table for cell in row):
-                            continue
-                        content = self.table_to_markdown(table)
-                        content = self.remove_unicode_chars(content)
-                        table_docs.append(Document(content, metadata={"format": "table"}))
-
-            logger.info(f'解析PDF文件完成：{self.file_path}')
+        # 处理表格部分保持不变
+        tables = read_pdf(self.file_path, pages='all')
+        for table in tables:
+            df = pd.DataFrame(table)
+            markdown_content = df.to_markdown(index=False)
+            table_docs.append(Document(markdown_content, metadata={"format": "table"}))
+        
+        logger.info(f'解析PDF文件完成：{self.file_path}')
 
         all_docs = text_docs + table_docs
         return all_docs
