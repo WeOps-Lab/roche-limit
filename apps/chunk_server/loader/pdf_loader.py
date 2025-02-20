@@ -95,7 +95,7 @@ class PDFLoader:
 
         # 处理表格部分保持不变
         tables = read_pdf(self.file_path, pages='all')
-        for table in tables:
+        for table in tqdm(tables, desc=f"解析PDF表格[{self.file_path}]"):
             df = pd.DataFrame(table)
             markdown_content = df.to_markdown(index=False)
             table_docs.append(Document(markdown_content, metadata={"format": "table"}))
