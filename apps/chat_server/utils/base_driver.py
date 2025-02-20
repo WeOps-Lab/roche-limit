@@ -68,6 +68,11 @@ Thought:{agent_scratchpad}
                 print("Formatted Prompt:\n", formatted_prompt)
 
                 result = agent_executor.invoke(input_data)
+                logger.info(f"""Tools Chat Server执行结果
+                   请求消息: {user_message}
+                   系统消息: {system_prompt}
+                   响应结果: {result}
+                """)
                 return json.dumps({"result": True, "data": {"content": result["output"]}})
 
             else:
