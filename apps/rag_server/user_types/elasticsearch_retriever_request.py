@@ -27,3 +27,8 @@ class ElasticSearchRetrieverRequest(ElasticSearchRequest):
     hyde_enhance_temperature: float = 0.7
     hyde_enhance_model: str = 'gpt-4-o'
     hyde_prompt_key: str = 'web_search'
+
+    enable_rag_memory: bool = False
+    memory_id: str = ''
+    max_short_term_memory_size: int = 100
+    max_short_term_memory_time: int = 3600
