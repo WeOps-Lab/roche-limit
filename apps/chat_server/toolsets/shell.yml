@@ -1,0 +1,16 @@
+shell_tools:
+  name: "Shell Tools"
+  description: "Shell command execution toolset for system operations"
+  tags:
+    - cli
+    - system
+  prerequisites:
+    - command: "which bash"
+  tools:
+    - name: "shell"
+      type: "langchain"
+      description: "Execute shell commands in a controlled environment. Use this tool to run system commands."
+      class: "ShellTool"
+      package: "langchain_community.tools"
+      permissions:
+        - "execute_commands"

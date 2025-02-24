@@ -1,0 +1,25 @@
+prometheus_tools:
+  name: "Prometheus Tools"
+  description: "Prometheus monitoring and metrics analysis toolset"
+  tags:
+    - monitoring
+    - metrics
+    - observability
+  tools:
+    - name: "prometheus-search"
+      type: "custom"
+      description: "Execute PromQL queries to search and analyze Prometheus metrics data"
+      class: "PrometheusSearchTool"
+      package: "apps.chat_server.tools.prometheus_tools"
+      capabilities:
+        - "query_metrics"
+        - "analyze_data"
+
+    - name: "prometheus-label"
+      type: "custom"
+      description: "Look up and explore available Prometheus metric labels and their values"
+      class: "PrometheusLabelLookupTool"
+      package: "apps.chat_server.tools.prometheus_tools"
+      capabilities:
+        - "discover_labels"
+        - "explore_metrics"
