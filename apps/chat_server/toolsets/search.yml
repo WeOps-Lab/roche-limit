@@ -1,13 +1,9 @@
 search_tools:
   name: "Search Tools"
   description: "Internet search toolset for retrieving information from the web"
-  tags:
-    - search
-    - internet
   tools:
     - name: "duckduckgo-search"
       type: "langchain"
-      description: "Search the internet using DuckDuckGo search engine to find relevant information."
-      class: "DuckDuckGoSearchRun"
       package: "langchain_community.tools"
-      rate_limit: 10
+      class: "DuckDuckGoSearchRun"
+      description: "Search the internet using DuckDuckGo search engine to find relevant information."

@@ -1,7 +1,7 @@
 import os
 import yaml
 import importlib
-from typing import List
+from typing import List, Dict, Any, Optional
 from loguru import logger
 
 class ToolLoader:
@@ -25,8 +25,8 @@ class ToolLoader:
                                 'tool_config': tool
                             }
 
-    def get_tool_instance(self, tool_name: str):
-        """根据工具名称创建工具实例"""
+    def get_tool_instance(self, tool_name: str, init_params: Optional[Dict[str, Any]] = None):
+        """根据工具名称创建工具实例，支持初始化参数"""
         if tool_name not in self._tools_metadata:
             logger.error(f"Tool {tool_name} not found in metadata")
             return None
@@ -38,29 +38,75 @@ class ToolLoader:
             module = importlib.import_module(tool_config['package'])
             tool_class = getattr(module, tool_config['class'])
             
-            tool_instance = tool_class()
-            # 使用YAML中的配置覆盖工具实例的属性
+            # 合并配置文件中的参数和动态传入的参数
+            constructor_params = tool_config.get('init_params', {})
+            if init_params:
+                constructor_params.update(init_params)
+
+            # 使用解包操作符传递参数创建实例
+            tool_instance = tool_class(**constructor_params)
+            
+            # 设置基本属性
             tool_instance.name = tool_config['name']
             tool_instance.description = tool_config['description']
+            
+            # 存储运行时参数的处理方法（如果工具类定义了的话）
+            if hasattr(tool_instance, 'process_runtime_params'):
+                tool_instance._has_runtime_params = True
             
             return tool_instance
         except Exception as e:
             logger.error(f"Failed to load tool {tool_name}: {e}")
             return None
 
-    def get_tools(self, tool_names: List[str]) -> List:
-        """获取指定名称的工具实例列表"""
+    def get_tools(self, 
+                 tool_names: List[str], 
+                 tools_init_param: Optional[Dict[str, Dict[str, Any]]] = None,
+                 tools_param: Optional[Dict[str, Dict[str, Any]]] = None) -> List:
+        """获取指定名称的工具实例列表，支持初始化参数和运行时参数"""
         if not tool_names:
             return []
 
         tools = []
+        tools_init_param = tools_init_param or {}
+        tools_param = tools_param or {}
+
         for tool_name in tool_names:
-            if tool_name not in self._tools_cache:
-                tool_instance = self.get_tool_instance(tool_name)
-                if tool_instance:
-                    self._tools_cache[tool_name] = tool_instance
+            cache_key = f"{tool_name}_{hash(str(tools_init_param.get(tool_name, {})))}"
             
-            if tool_name in self._tools_cache:
-                tools.append(self._tools_cache[tool_name])
+            if cache_key not in self._tools_cache:
+                tool_instance = self.get_tool_instance(
+                    tool_name,
+                    init_params=tools_init_param.get(tool_name)
+                )
+                if tool_instance:
+                    self._tools_cache[cache_key] = tool_instance
+            
+            if cache_key in self._tools_cache:
+                tool_instance = self._tools_cache[cache_key]
+                # 如果工具有运行时参数且提供了参数值，则处理运行时参数
+                if hasattr(tool_instance, '_has_runtime_params') and tool_name in tools_param:
+                    # 创建工具实例的副本，避免修改缓存的实例
+                    tool_instance = self._process_runtime_params(tool_instance, tools_param[tool_name])
+                tools.append(tool_instance)
 
         return tools
+
+    def _process_runtime_params(self, tool_instance, runtime_params: Dict[str, Any]):
+        """处理工具的运行时参数"""
+        try:
+            # 创建工具实例的副本
+            new_instance = tool_instance.__class__(**{
+                attr: getattr(tool_instance, attr)
+                for attr in tool_instance.__dict__
+                if not attr.startswith('_')
+            })
+            # 设置基本属性
+            new_instance.name = tool_instance.name
+            new_instance.description = tool_instance.description
+            # 处理运行时参数
+            new_instance.process_runtime_params(runtime_params)
+            return new_instance
+        except Exception as e:
+            logger.error(f"Failed to process runtime params for tool {tool_instance.name}: {e}")
+            return tool_instance
