@@ -1,4 +1,5 @@
 from langchain_community.chat_message_histories import ChatMessageHistory
+from loguru import logger
 
 from apps.chat_server.user_types.base_chat_request import BaseChatRequest
 
@@ -10,6 +11,10 @@ class RunnableMixin:
 
         if req.chat_history:
             for event in req.chat_history[-req.conversation_window_size:]:
+                if event.text is None:
+                    logger.debug("Skipping event with None text:{event}")
+                    continue
+                
                 if event.event == "user":
                     llm_chat_history.add_user_message(event.text)
                 elif event.event == "bot":

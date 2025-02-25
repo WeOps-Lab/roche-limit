@@ -110,9 +110,9 @@ Thought:{agent_scratchpad}
             # log traceback
             logger.exception(e)
             return json.dumps({
-                "result": False,
+                "result": True,
                 "data": {
-                    "content": "大模型限流，请重试....",
+                    "content": "非常抱歉,触发了智能体的拦截策略,不能回复您哦.....",
                     "input_tokens": 0,
                     "output_tokens": 0,
                 }
