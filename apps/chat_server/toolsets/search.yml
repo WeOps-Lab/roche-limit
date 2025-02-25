@@ -1,9 +1,9 @@
 search_tools:
-  name: "Search Tools"
-  description: "Internet search toolset for retrieving information from the web"
+  name: "联网检索"
+  description: "联网检索工具包"
+  package: "langchain_community.tools"
   tools:
     - name: "duckduckgo-search"
       type: "langchain"
-      package: "langchain_community.tools"
       class: "DuckDuckGoSearchRun"
       description: "Search the internet using DuckDuckGo search engine to find relevant information."

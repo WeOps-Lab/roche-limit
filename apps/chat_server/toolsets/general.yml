@@ -1,0 +1,22 @@
+general_tools:
+  name: "通用工具包"
+  description: "通用工具包"
+  package: "apps.chat_server.tools.general_tools"
+  tools:
+    - name: "chinese_holiday_lookup"
+      class: "ChineseHolidayTool"
+      init_config:
+        type: "custom"
+        description: "用于查询中国节假日信息的工具。输入年份（如2025），返回该年的所有节假日信息。"
+      input_schema:
+        - key: "year"
+          type: "str"
+          description: "要查询的年份，例如：2025"
+
+    - name: "current_time"
+      class: "ShellCommandTool"
+      init_config:
+        type: "custom"
+        description: "这是一个获取当前时间的工具, 通过调用系统命令date来获取当前时间。"
+        command: "date"
+

@@ -1,9 +1,0 @@
-holiday_tools:
-  name: holiday
-  description: Chinese holiday tools collection
-  tools:
-    - name: "chinese_holiday_lookup"
-      type: "custom"
-      package: "apps.chat_server.tools.holiday_tools"
-      class: "ChineseHolidayTool"
-      description: ""
