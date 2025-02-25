@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 
 from langchain.agents import create_tool_calling_agent, AgentExecutor
-from langchain_community.tools import ShellTool, DuckDuckGoSearchRun
 from langchain_core.prompts import (
     ChatPromptTemplate,
     MessagesPlaceholder,
@@ -11,7 +10,6 @@ from langchain_core.prompts import (
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from loguru import logger
 
-from apps.chat_server.tools.prometheus_tools import PrometheusLabelLookupTool, PrometheusSearchTool
 from apps.chat_server.utils.tool_loader import ToolLoader
 
 
@@ -27,27 +25,29 @@ class BaseDriver:
             if tools:
                 prompt = ChatPromptTemplate.from_messages([
                     ("system", """     
-{system_prompt}
-Here is our chat history:
-{chat_history}
-Here is some context: 
-{rag_content}      
-
-Answer the following questions as best you can. You have access to the following tools:
-{tools}
-Use the following format:
-Question: the input question you must answer
-Thought: you should always think about what to do
-Action: the action to take, should be one of [{tools}]
-Action Input: the input to the action
-Observation: the result of the action
-... (this Thought/Action/Action Input/Observation can repeat N times)
-Thought: I now know the final answer
-Final Answer: the final answer to the original input question
-Begin!
-Question: {input}
-Thought:{agent_scratchpad}
-
+                        {system_prompt}
+                        
+                        Here is our chat history:
+                        {chat_history}
+                        
+                        Here is some context: 
+                        {rag_content}      
+                        
+                        Answer the following questions as best you can. You have access to the following tools:
+                        {tools}
+                        
+                        Use the following format:
+                        Question: the input question you must answer
+                        Thought: you should always think about what to do
+                        Action: the action to take, should be one of [{tools}]
+                        Action Input: the input to the action
+                        Observation: the result of the action
+                        ... (this Thought/Action/Action Input/Observation can repeat N times)
+                        Thought: I now know the final answer
+                        Final Answer: the final answer to the original input question
+                        Begin!
+                        Question: {input}
+                        Thought:{agent_scratchpad}
                     """),
                     ("human", "{input}"),
                     ("placeholder", "{agent_scratchpad}"),
@@ -62,13 +62,6 @@ Thought:{agent_scratchpad}
                             requested_tools.extend(loaded_tools)
                         else:
                             logger.warning(f"Tool {tool_name} not found or failed to load")
-
-                if not requested_tools:
-                    logger.error("No valid tools were loaded")
-                    return json.dumps({
-                        "result": False,
-                        "data": {"content": "未能加载指定的工具，请检查工具名称是否正确"}
-                    })
 
                 agent = create_tool_calling_agent(self.client, requested_tools, prompt)
                 agent_executor = AgentExecutor(agent=agent, tools=requested_tools, max_iterations=30, verbose=True)
