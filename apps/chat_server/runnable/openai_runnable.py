@@ -1,5 +1,3 @@
-from typing import List
-
 from langchain_core.runnables import RunnableLambda
 
 from apps.chat_server.runnable.runnable_mixin import RunnableMixin
