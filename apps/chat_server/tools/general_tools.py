@@ -4,6 +4,7 @@ import subprocess
 from langchain_core.callbacks import CallbackManagerForToolRun, AsyncCallbackManagerForToolRun
 from langchain_core.tools import BaseTool
 
+
 class ChineseHolidayTool(BaseTool):
     def _run(
             self, year: str, run_manager: Optional[CallbackManagerForToolRun] = None
@@ -20,9 +21,10 @@ class ChineseHolidayTool(BaseTool):
     ) -> str:
         raise NotImplementedError("chinese_holiday_lookup does not support async")
 
+
 class ShellCommandTool(BaseTool):
     command: str = ""
-    
+
     def _run(
             self, run_manager: Optional[CallbackManagerForToolRun] = None
     ) -> str:
