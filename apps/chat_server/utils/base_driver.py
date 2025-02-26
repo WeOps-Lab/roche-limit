@@ -153,7 +153,8 @@ class BaseDriver:
             "result": True,
             "data": {
                 "content": result,
-                "token_usage": token_info
+                "input_tokens": cb.prompt_tokens,
+                "output_tokens": cb.completion_tokens,
             }
         }, ensure_ascii=False, indent=4)
 
