@@ -24,9 +24,13 @@ class ChineseHolidayTool(BaseTool):
 
 class ShellCommandTool(BaseTool):
     command: str = ""
+    
+    def __init__(self, name: str, description: str, command: str):
+        super().__init__(name=name, description=description)
+        self.command = command
 
     def _run(
-            self, run_manager: Optional[CallbackManagerForToolRun] = None
+            self, query: str = "", run_manager: Optional[CallbackManagerForToolRun] = None
     ) -> str:
         try:
             result = subprocess.run(
@@ -41,6 +45,6 @@ class ShellCommandTool(BaseTool):
             return f"Command execution failed: {str(e)}"
 
     async def _arun(
-            self, run_manager: Optional[AsyncCallbackManagerForToolRun] = None
+            self, query: str = "", run_manager: Optional[AsyncCallbackManagerForToolRun] = None
     ) -> str:
         raise NotImplementedError("ShellCommandTool does not support async")

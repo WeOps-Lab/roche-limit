@@ -69,7 +69,7 @@ class BaseDriver:
         agent_executor = initialize_agent(
             tools=requested_tools,
             llm=self.client,
-            agent=AgentType.OPENAI_FUNCTIONS,
+            agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             verbose=True,
             max_iterations=30,
             early_stopping_method="generate"

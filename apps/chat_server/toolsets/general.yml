@@ -16,7 +16,6 @@ general_tools:
     - name: "current_time"
       class: "ShellCommandTool"
       init_config:
-        type: "custom"
         description: "这是一个获取当前时间的工具, 通过调用系统命令date来获取当前时间。"
         command: "date"
 
