@@ -3,7 +3,7 @@ general_tools:
   description: "通用工具包"
   package: "apps.chat_server.tools.general_tools"
   tools:
-    - name: "chinese_holiday_lookup"
+    - name: "general_chinese_holiday_lookup"
       class: "ChineseHolidayTool"
       init_config:
         type: "custom"
@@ -13,7 +13,7 @@ general_tools:
           type: "str"
           description: "要查询的年份，例如：2025"
 
-    - name: "current_time"
+    - name: "general_current_time"
       class: "ShellCommandTool"
       init_config:
         description: "这是一个获取当前时间的工具, 通过调用系统命令date来获取当前时间。"
