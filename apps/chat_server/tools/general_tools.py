@@ -12,7 +12,7 @@ class ChineseHolidayTool(BaseTool):
         url = f"https://api.jiejiariapi.com/v1/holidays/{year}"
         response = requests.get(url)
         if response.status_code == 200:
-            return response.json()
+            return str(response.json()).replace("{","").replace("}","")
         else:
             return f"Error: Failed to fetch holiday data. Status code: {response.status_code}"
 
