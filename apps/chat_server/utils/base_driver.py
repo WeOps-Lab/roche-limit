@@ -185,11 +185,7 @@ class BaseDriver:
                 "result": True,
                 "data": {
                     "content": "非常抱歉,触发了智能体的拦截策略,不能回复您哦.....",
-                    "token_usage": {
-                        "total_tokens": 0,
-                        "prompt_tokens": 0,
-                        "completion_tokens": 0,
-                        "total_cost": 0
-                    }
+                    "input_tokens": 0,
+                    "output_tokens": 0,
                 }
             }, ensure_ascii=False, indent=4)
