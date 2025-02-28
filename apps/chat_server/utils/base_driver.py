@@ -45,7 +45,7 @@ class BaseDriver:
         self.tool_loader = ToolLoader(toolsets_dir=toolsets_dir)
 
     def _invoke_simple_chain(self, user_message: str, message_history: Any, system_prompt: str, rag_content: str):
-        logger.debug(f"Starting simple chain invocation with message: {user_message}")
+        logger.info(f"Starting simple chain invocation with message: {user_message}")
         simple_prompt = ChatPromptTemplate.from_messages([
             ("system", f"{system_prompt}, Here is some context: {rag_content}"),
             MessagesPlaceholder(variable_name="chat_history"),
@@ -59,7 +59,7 @@ class BaseDriver:
             history_messages_key="chat_history",
         )
         result = chain_with_history.invoke({"input": user_message})
-        logger.debug(f"Simple chain result: {result}")
+        logger.info(f"Simple chain result: {result}")
         return result
 
     def chat_with_history(self, system_prompt: str, user_message: str,
