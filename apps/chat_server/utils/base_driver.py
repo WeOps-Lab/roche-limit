@@ -3,14 +3,13 @@ import os
 from pathlib import Path
 from typing import List, Dict, Any
 
-from langchain.agents import initialize_agent, AgentType, AgentExecutor
+from langchain.agents import initialize_agent, AgentType
 from langchain_community.callbacks import get_openai_callback
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from loguru import logger
 
 from apps.chat_server.utils.tool_loader import ToolLoader
-
 
 class BaseDriver:
     AGENT_SYSTEM_TEMPLATE = """     
@@ -67,29 +66,23 @@ class BaseDriver:
                           tools: List[str] = []) -> str:
         try:
             logger.info(f"Starting chat with message: {user_message}")
-            logger.debug(f"System prompt: {system_prompt}")
-            logger.debug(f"RAG content: {rag_content}")
-            logger.debug(f"Tools requested: {tools}")
+            logger.debug(f"System prompt: {system_prompt}, RAG content: {rag_content}, Tools: {tools}")
+            total_prompt_tokens, total_completion_tokens = 0, 0
 
             if tools:
-                total_prompt_tokens = 0
-                total_completion_tokens = 0
-
                 requested_tools = []
                 for tool_name in tools:
-                    if isinstance(tool_name, str):
-                        loaded_tools = self.tool_loader.get_tools([tool_name])
-                        if loaded_tools:
-                            requested_tools.extend(loaded_tools)
-                        else:
-                            logger.warning(f"Tool {tool_name} not found or failed to load")
+                    loaded_tools = self.tool_loader.get_tools([tool_name])
+                    if loaded_tools:
+                        requested_tools.extend(loaded_tools)
+                    else:
+                        logger.warning(f"Tool {tool_name} not found or failed to load")
 
                 agent_prompt = ChatPromptTemplate.from_messages([
                     ("system", self.AGENT_SYSTEM_TEMPLATE),
                     ("human", "{input}"),
                     ("placeholder", "{agent_scratchpad}"),
                 ])
-
                 agent_executor = initialize_agent(
                     tools=requested_tools,
                     llm=self.client,
@@ -100,7 +93,6 @@ class BaseDriver:
                     early_stopping_method="generate",
                     return_intermediate_steps=True,
                 )
-
                 input_data = {
                     "input": user_message,
                     "chat_history": message_history.messages,
@@ -108,7 +100,6 @@ class BaseDriver:
                     "tools": [tool.name for tool in requested_tools],
                     "system_prompt": system_prompt,
                 }
-
                 formatted_prompt = agent_prompt.format(**input_data)
                 logger.debug(f"Formatted Prompt:\n{formatted_prompt}")
 
@@ -116,70 +107,38 @@ class BaseDriver:
                     result = agent_executor(input_data)
                     total_prompt_tokens += cb.prompt_tokens
                     total_completion_tokens += cb.completion_tokens
+                    logger.info(f"Agent execution tokens - Input: {cb.prompt_tokens}, Output: {cb.completion_tokens}")
 
-                    logger.info(
-                        f"Agent execution completed. Token usage - Input: {cb.prompt_tokens}, Output: {cb.completion_tokens}")
-
-                    tool_desc_map = {tool.name: tool.description for tool in requested_tools}
-                    tools_result = ""
-                    for index, r in enumerate(result['intermediate_steps']):
-                        if r[0].tool in tool_desc_map:
-                            description = tool_desc_map.get(r[0].tool)
-                            tools_result += f"""
-                               步骤:{index}
-                                 执行的工具: {r[0].tool}
-                                 工具描述: {description}
-                                 执行的结果: {r[1]}
-                            """ + '\n'
-                            logger.debug(f"Tool execution: {r[0].tool} - Result: {r[1]}")
+                tool_desc_map = {tool.name: tool.description for tool in requested_tools}
+                tools_result = ""
+                for index, step in enumerate(result.get("intermediate_steps", [])):
+                    tool_used = step[0].tool
+                    if tool_used in tool_desc_map:
+                        tools_result += f"\n步骤:{index}\n执行的工具: {tool_used}\n工具描述: {tool_desc_map[tool_used]}\n执行的结果: {step[1]}\n"
+                        logger.debug(f"Tool execution: {tool_used} - Result: {step[1]}")
 
                 if tools_result:
-                    rag_content += f"""
-                        工具的执行结果:
-                        ==========
-                        {tools_result}
-                        ==========
-                    """
+                    rag_content += f"\n工具的执行结果:\n==========\n{tools_result}\n==========\n"
 
                 simple_result = self._invoke_simple_chain(user_message, message_history, system_prompt, rag_content)
                 total_prompt_tokens += simple_result.usage_metadata['input_tokens']
                 total_completion_tokens += simple_result.usage_metadata['output_tokens']
-
-                logger.info(
-                    f"Final combined token usage:\n"
-                    f"Total Input Tokens: {total_prompt_tokens}\n"
-                    f"Total Output Tokens: {total_completion_tokens}\n"
-                    f"Total: {total_prompt_tokens + total_completion_tokens}"
-                )
-
-                return json.dumps({
-                    "result": True,
-                    "data": {
-                        "content": simple_result.content,
-                        "input_tokens": total_prompt_tokens,
-                        "output_tokens": total_completion_tokens,
-                    }
-                }, ensure_ascii=False, indent=4)
             else:
                 simple_result = self._invoke_simple_chain(user_message, message_history, system_prompt, rag_content)
+                total_prompt_tokens = simple_result.usage_metadata['input_tokens']
+                total_completion_tokens = simple_result.usage_metadata['output_tokens']
 
-                logger.info(
-                    f"Chat Result Summary:\n"
-                    f"Request: {user_message}\n"
-                    f"Response: {simple_result.content}\n"
-                    f"Token Usage - Input: {simple_result.usage_metadata['input_tokens']}, "
-                    f"Output: {simple_result.usage_metadata['output_tokens']}, "
-                    f"Total: {simple_result.usage_metadata['total_tokens']}"
-                )
+            logger.info(f"Final combined token usage - Input: {total_prompt_tokens}, Output: {total_completion_tokens}, Total: {total_prompt_tokens+total_completion_tokens}")
 
-                return json.dumps({
-                    "result": True,
-                    "data": {
-                        "content": simple_result.content,
-                        "input_tokens": simple_result.usage_metadata['input_tokens'],
-                        "output_tokens": simple_result.usage_metadata['output_tokens'],
-                    }
-                }, ensure_ascii=False, indent=4)
+            response = {
+                "result": True,
+                "data": {
+                    "content": simple_result.content,
+                    "input_tokens": total_prompt_tokens,
+                    "output_tokens": total_completion_tokens,
+                }
+            }
+            return json.dumps(response, ensure_ascii=False, indent=4)
         except Exception as e:
             logger.exception(f"Error during chat execution: {str(e)}")
             return json.dumps({
