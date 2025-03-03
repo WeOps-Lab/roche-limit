@@ -25,6 +25,7 @@ class RunnableMixin:
             user_message=req.user_message,
             message_history=llm_chat_history,
             rag_content=req.rag_context,
-            tools=req.tools
+            tools=req.tools,
+            tools_args=req.tools_args  # 新增传入tools_args
         )
         return result

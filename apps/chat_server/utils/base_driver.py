@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from langchain.agents import initialize_agent, AgentType, AgentExecutor
 from langchain_community.callbacks import get_openai_callback
@@ -64,7 +64,8 @@ class BaseDriver:
 
     def chat_with_history(self, system_prompt: str, user_message: str,
                           message_history: Any, rag_content: str = "",
-                          tools: List[str] = []) -> str:
+                          tools: List[str] = [],
+                          tools_args: Optional[Dict[str, Dict[str, Any]]] = None) -> str:
         try:
             logger.info(f"System Prompt: {system_prompt}, User Message: {user_message},tools:{tools}")
 
@@ -72,14 +73,12 @@ class BaseDriver:
                 total_prompt_tokens = 0
                 total_completion_tokens = 0
 
-                requested_tools = []
-                for tool_name in tools:
-                    if isinstance(tool_name, str):
-                        loaded_tools = self.tool_loader.get_tools([tool_name])
-                        if loaded_tools:
-                            requested_tools.extend(loaded_tools)
-                        else:
-                            logger.warning(f"Tool {tool_name} not found or failed to load")
+                requested_tools = self.tool_loader.get_tools(
+                    tool_names=tools,
+                    tools_init_param={},  # 如有需要，可传入对应参数
+                    tools_param={},
+                    tools_args=tools_args
+                )
 
                 agent_executor = initialize_agent(
                     tools=requested_tools,

@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict
 from langserve import CustomUserType
 
 from apps.chat_server.user_types.chat_history import ChatHistory
@@ -13,3 +13,5 @@ class BaseChatRequest(CustomUserType):
     conversation_window_size: Optional[int] = 10
     rag_context: Optional[str] = ''
     tools: Optional[List[str]]
+
+    tools_args: Optional[Dict[str, str]]

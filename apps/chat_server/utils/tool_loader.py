@@ -59,7 +59,8 @@ class ToolLoader:
                             'tool_config': tool,
                         }
 
-    def get_tool_instance(self, tool_name: str, init_params: Optional[Dict[str, Any]] = None):
+    def get_tool_instance(self, tool_name: str, init_params: Optional[Dict[str, Any]] = None,
+                          tools_args: Optional[Dict[str, Any]] = None):
         """根据工具名称创建工具实例"""
         if tool_name not in self._tools_metadata:
             logger.error(f"Tool {tool_name} not found")
@@ -75,13 +76,17 @@ class ToolLoader:
             args_schema = create_input_model(tool_config)
 
             # 创建基础实例，包含args_schema
-            instance = tool_class(
-                name=tool_config['name'],
-                args_schema=args_schema,
+            params = {
+                'name': tool_config['name'],
+                'args_schema': args_schema,
                 **tool_config.get('init_config', {}),
                 **(init_params or {})
-            )
+            }
 
+            # Add tools_args if the class has this attribute
+            instance = tool_class(**params)
+            if hasattr(instance, 'tools_args'):
+                instance.tools_args = tools_args
             return instance
         except Exception as e:
             logger.error(f"Failed to load tool {tool_name}: {e}")
@@ -90,7 +95,8 @@ class ToolLoader:
     def get_tools(self,
                   tool_names: List[str],
                   tools_init_param: Optional[Dict[str, Dict[str, Any]]] = None,
-                  tools_param: Optional[Dict[str, Dict[str, Any]]] = None) -> List:
+                  tools_param: Optional[Dict[str, Dict[str, Any]]] = None,
+                  tools_args: Optional[Dict[str, Dict[str, Any]]] = None) -> List:
         """获取工具实例列表"""
         if not tool_names:
             return []
@@ -98,13 +104,14 @@ class ToolLoader:
         tools = []
         tools_init_param = tools_init_param or {}
         tools_param = tools_param or {}
+        tools_args = tools_args or {}
 
         for name in tool_names:
             merged_params = {
                 **(tools_init_param.get(name, {})),
-                **(tools_param.get(name, {}))
+                **(tools_param.get(name, {})),
             }
-            if instance := self.get_tool_instance(name, merged_params):
+            if instance := self.get_tool_instance(name, merged_params, tools_args):
                 tools.append(instance)
 
         return tools
