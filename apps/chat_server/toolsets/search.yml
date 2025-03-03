@@ -6,4 +6,5 @@ search_tools:
     - name: "duckduckgo-search"
       type: "langchain"
       class: "DuckDuckGoSearchRun"
-      description: "Search the internet using DuckDuckGo search engine to find relevant information."
+      description: "当需要进行互联网检索补充信息时，使用DuckDuckGo搜索引擎进行搜索。"
+

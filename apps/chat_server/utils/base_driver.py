@@ -66,10 +66,7 @@ class BaseDriver:
                           message_history: Any, rag_content: str = "",
                           tools: List[str] = []) -> str:
         try:
-            logger.info(f"Starting chat with message: {user_message}")
-            logger.debug(f"System prompt: {system_prompt}")
-            logger.debug(f"RAG content: {rag_content}")
-            logger.debug(f"Tools requested: {tools}")
+            logger.info(f"System Prompt: {system_prompt}, User Message: {user_message},tools:{tools}")
 
             if tools:
                 total_prompt_tokens = 0
@@ -84,12 +81,6 @@ class BaseDriver:
                         else:
                             logger.warning(f"Tool {tool_name} not found or failed to load")
 
-                agent_prompt = ChatPromptTemplate.from_messages([
-                    ("system", self.AGENT_SYSTEM_TEMPLATE),
-                    ("human", "{input}"),
-                    ("placeholder", "{agent_scratchpad}"),
-                ])
-
                 agent_executor = initialize_agent(
                     tools=requested_tools,
                     llm=self.client,
@@ -100,6 +91,12 @@ class BaseDriver:
                     early_stopping_method="generate",
                     return_intermediate_steps=True,
                 )
+
+                agent_prompt = ChatPromptTemplate.from_messages([
+                    ("system", self.AGENT_SYSTEM_TEMPLATE),
+                    ("human", "{input}"),
+                    ("placeholder", "{agent_scratchpad}"),
+                ])
 
                 input_data = {
                     "input": user_message,
@@ -135,9 +132,15 @@ class BaseDriver:
 
                 if tools_result:
                     rag_content += f"""
-                        <function_call_result>
+                        <function_call_step_result>
                             {tools_result}
-                        </function_call_result>
+                        </function_call_step_result>
+                    """
+
+                    rag_content += f"""
+                            <function_call_thought>
+                                {result['output']}
+                            </function_call_thought>
                     """
 
                 simple_result = self._invoke_simple_chain(user_message, message_history, system_prompt, rag_content)
