@@ -26,4 +26,20 @@ general_tools:
           description: |
             一个JSON字符串，包括: year      
 
+    - name: "general_ff_name"
+      package: "apps.chat_server.tools.general.shell_command_tool"
+      class: "ShellCommandTool"
+      init_config:
+        description: |
+          这是一个获取芳芳男神的人的工具，用来帮助用户了解芳芳的男神是谁
+          input是一个JSON字符串，包含以下属性:
+            - name: 名字，固定是 王一博 或者 肖战
+        command: |
+          echo 芳芳的男神是:{name}
+      input_schema:
+        - key: "tools_input"
+          type: "str"
+          description: |
+            一个JSON字符串，包括: name               
+
 

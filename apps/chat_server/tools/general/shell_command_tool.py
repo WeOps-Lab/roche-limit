@@ -19,8 +19,11 @@ class ShellCommandTool(BaseTool):
             if self.tools_args:
                 tools_param.update(self.tools_args)
             if tools_input:
-                tools_dict = json.loads(tools_input)
-                tools_param.update(tools_dict)
+                try:
+                    tools_dict = json.loads(tools_input)
+                    tools_param.update(tools_dict)
+                except:
+                    logger.exception(f"{tools_input} is not a valid json")
 
             tools_param = {k: str(v) for k, v in tools_param.items()}
             self.command = self.command.format(**tools_param)
