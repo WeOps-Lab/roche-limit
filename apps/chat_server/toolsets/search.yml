@@ -1,10 +1,9 @@
 search_tools:
   name: "联网检索"
   description: "联网检索工具包"
-  package: "langchain_community.tools"
   tools:
     - name: "duckduckgo-search"
-      type: "langchain"
+      package: "langchain_community.tools"
       class: "DuckDuckGoSearchRun"
       description: "当需要进行互联网检索补充信息时，使用DuckDuckGo搜索引擎进行搜索。"
 

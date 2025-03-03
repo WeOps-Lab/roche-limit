@@ -1,21 +1,27 @@
 general_tools:
   name: "通用工具包"
   description: "通用工具包"
-  package: "apps.chat_server.tools.general_tools"
   tools:
-    - name: "general_chinese_holiday_lookup"
-      class: "ChineseHolidayTool"
-      init_config:
-        type: "custom"
-        description: "用于查询中国节假日信息的工具。输入年份（如2025），返回该年的所有节假日信息。"
-      input_schema:
-        - key: "year"
-          type: "str"
-          description: "要查询的年份，例如：2025"
-
     - name: "general_current_time"
+      package: "apps.chat_server.tools.general.shell_command_tool"
       class: "ShellCommandTool"
       init_config:
-        description: "这是一个获取当前时间的工具, 通过调用系统命令date来获取当前时间。"
+        description: |
+          这是一个获取当前时间的工具, 通过调用系统命令date来获取当前时间
         command: "date"
 
+    - name: "general_chinese_holiday_lookup"
+      package: "apps.chat_server.tools.general.shell_command_tool"
+      class: "ShellCommandTool"
+      init_config:
+        description: |
+          用于查询中国节假日信息的工具,帮助用户了解中国的节假日信息。
+          input是一个JSON字符串，包含以下属性:
+            - year: 用户想要查询的年份,例如 2024
+        command: |
+          curl https://api.jiejiariapi.com/v1/holidays/{year}
+      input_schema:
+        - key: "tools_input"
+          type: "str"
+          description: |
+            一个JSON字符串，包括: year      
