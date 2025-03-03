@@ -9,7 +9,7 @@ from pydantic.v1 import BaseModel, Field
 
 def create_input_model(tool_config: Dict) -> Optional[type[BaseModel]]:
     """从工具配置创建输入模型"""
-    if not tool_config.get('input_schema'):
+    if not tool_config.get('args_schema'):
         return None
 
     field_definitions = {
@@ -17,7 +17,7 @@ def create_input_model(tool_config: Dict) -> Optional[type[BaseModel]]:
             eval(field['type']),
             Field(description=field['description'])
         )
-        for field in tool_config['input_schema']
+        for field in tool_config['args_schema']
     }
 
     # 创建一个专门的输入模型类
@@ -59,8 +59,9 @@ class ToolLoader:
                             'tool_config': tool,
                         }
 
-    def get_tool_instance(self, tool_name: str, init_params: Optional[Dict[str, Any]] = None,
+    def get_tool_instance(self, tool_name: str,
                           tools_args: Optional[Dict[str, Any]] = None):
+
         """根据工具名称创建工具实例"""
         if tool_name not in self._tools_metadata:
             logger.error(f"Tool {tool_name} not found")
@@ -74,19 +75,15 @@ class ToolLoader:
 
             # 先创建输入模型
             args_schema = create_input_model(tool_config)
+            instance = tool_class(name=tool_config['name'], description=tool_config['description'],
+                                  **tool_config.get('parameters', {}))
 
-            # 创建基础实例，包含args_schema
-            params = {
-                'name': tool_config['name'],
-                'args_schema': args_schema,
-                **tool_config.get('init_config', {}),
-                **(init_params or {})
-            }
+            if hasattr(instance, 'args_schema') and args_schema is not None:
+                instance.args_schema = args_schema
 
-            # Add tools_args if the class has this attribute
-            instance = tool_class(**params)
             if hasattr(instance, 'tools_args'):
                 instance.tools_args = tools_args
+
             return instance
         except Exception as e:
             logger.error(f"Failed to load tool {tool_name}: {e}")
@@ -94,24 +91,16 @@ class ToolLoader:
 
     def get_tools(self,
                   tool_names: List[str],
-                  tools_init_param: Optional[Dict[str, Dict[str, Any]]] = None,
-                  tools_param: Optional[Dict[str, Dict[str, Any]]] = None,
                   tools_args: Optional[Dict[str, Dict[str, Any]]] = None) -> List:
         """获取工具实例列表"""
         if not tool_names:
             return []
 
         tools = []
-        tools_init_param = tools_init_param or {}
-        tools_param = tools_param or {}
         tools_args = tools_args or {}
 
         for name in tool_names:
-            merged_params = {
-                **(tools_init_param.get(name, {})),
-                **(tools_param.get(name, {})),
-            }
-            if instance := self.get_tool_instance(name, merged_params, tools_args):
+            if instance := self.get_tool_instance(name, tools_args):
                 tools.append(instance)
 
         return tools

@@ -75,8 +75,6 @@ class BaseDriver:
 
                 requested_tools = self.tool_loader.get_tools(
                     tool_names=tools,
-                    tools_init_param={},  # 如有需要，可传入对应参数
-                    tools_param={},
                     tools_args=tools_args
                 )
 
