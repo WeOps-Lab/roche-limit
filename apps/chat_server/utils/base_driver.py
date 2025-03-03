@@ -94,9 +94,9 @@ class BaseDriver:
                     tools=requested_tools,
                     llm=self.client,
                     handle_parsing_errors=True,
-                    agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+                    agent=AgentType.OPENAI_FUNCTIONS,
                     verbose=True,
-                    max_iterations=10,
+                    max_iterations=5,
                     early_stopping_method="generate",
                     return_intermediate_steps=True,
                 )
@@ -131,7 +131,7 @@ class BaseDriver:
                                  tools description: {description}
                                  tools execute result: {r[1]}
                             """ + '\n'
-                            logger.debug(f"Tool execution: {r[0].tool} - Result: {r[1]}")
+                            logger.info(f"Tool execution: {r[0].tool} - Result: {r[1]}")
 
                 if tools_result:
                     rag_content += f"""
