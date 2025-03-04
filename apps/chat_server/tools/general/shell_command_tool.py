@@ -1,14 +1,16 @@
 import json
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import subprocess
 from langchain_core.callbacks import CallbackManagerForToolRun, AsyncCallbackManagerForToolRun
 from langchain_core.tools import BaseTool
 from loguru import logger
 
+from apps.chat_server.user_types.tools_args import ToolsArgs
+
 
 class ShellCommandTool(BaseTool):
     command: str = ""
-    tools_args: Optional[Dict[str, str]]
+    tools_args: Optional[List[ToolsArgs]]
 
     def _run(
             self, tools_input: str = "", run_manager: Optional[CallbackManagerForToolRun] = None
@@ -17,7 +19,8 @@ class ShellCommandTool(BaseTool):
             logger.info(f"Running command: {self.command}")
             tools_param = {}
             if self.tools_args:
-                tools_param.update(self.tools_args)
+                for arg in self.tools_args:
+                    tools_param[arg.key] = arg.value
             if tools_input:
                 try:
                     tools_dict = json.loads(tools_input)

@@ -1,51 +1,71 @@
-import json
+from langchain_openai import ChatOpenAI
 import os
 from pathlib import Path
-from typing import List, Dict, Any, Optional
 
-from langchain.agents import initialize_agent, AgentType, AgentExecutor
+import json
+import time
+from typing import List, Any
+from langchain.agents import initialize_agent, AgentType
 from langchain_community.callbacks import get_openai_callback
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from loguru import logger
 
-from apps.chat_server.utils.tool_loader import ToolLoader
+from apps.chat_server.user_types.tools_args import ToolsArgs
+from apps.chat_server.driver.tool_loader import ToolLoader
 
 
-class BaseDriver:
-    AGENT_SYSTEM_TEMPLATE = """     
-        {system_prompt}
+class OpenAIDriver():
+    def __init__(self, openai_api_key, openai_base_url, temperature, model):
+        # 先调用父类的初始化方法
+        super().__init__()
 
-        Here is our chat history:
-        {chat_history}
+        # 然后初始化 OpenAI 客户端
+        self.client = ChatOpenAI(
+            openai_api_key=openai_api_key,
+            openai_api_base=openai_base_url,
+            temperature=temperature,
+            model=model,
+            max_retries=3,
+        )
 
-        Here is some context: 
-        {rag_content}      
-
-        Answer the following questions as best you can. You have access to the following tools:
-        {tools}
-
-        Use the following format:
-        Question: the input question you must answer
-        Thought: you should always think about what to do
-        Action: the action to take, should be one of [{tools}]
-        Action Input: the input to the action
-        Observation: the result of the action
-        ... (this Thought/Action/Action Input/Observation can repeat N times)
-        Thought: I now know the final answer
-        Final Answer: the final answer to the original input question
-        Begin!
-        Question: {input}
-        Thought:{agent_scratchpad}
-    """
-
-    def __init__(self):
         current_dir = Path(__file__).parent
         toolsets_dir = os.path.join(current_dir, "..", "toolsets")
         self.tool_loader = ToolLoader(toolsets_dir=toolsets_dir)
 
-    def _invoke_simple_chain(self, user_message: str, message_history: Any, system_prompt: str, rag_content: str):
-        logger.info(f"Starting simple chain invocation with message: {user_message}")
+        self.agent_system_template = """     
+                        {system_prompt}
+        
+                        Here is our chat history:
+                        {chat_history}
+        
+                        Here is some context: 
+                        {rag_content}      
+        
+                        Answer the following questions as best you can. You have access to the following tools:
+                        {tools}
+        
+                        Use the following format:
+                        Question: the input question you must answer
+                        Thought: you should always think about what to do
+                        Action: the action to take, should be one of [{tools}]
+                        Action Input: the input to the action
+                        Observation: the result of the action
+                        ... (this Thought/Action/Action Input/Observation can repeat N times)
+                        Thought: I now know the final answer
+                        Final Answer: the final answer to the original input question
+                        Begin!
+                        Question: {input}
+                        Thought:{agent_scratchpad}
+                    """
+
+    def _invoke_simple_chain(self, user_message: str,
+                             message_history: Any,
+                             system_prompt: str,
+                             rag_content: str,
+                             trace_id: str):
+        start_time = time.time()
+        logger.info(f"问题[{trace_id}]: {user_message}")
         simple_prompt = ChatPromptTemplate.from_messages([
             ("system", f"{system_prompt}, Here is some context: {rag_content}"),
             MessagesPlaceholder(variable_name="chat_history"),
@@ -59,13 +79,18 @@ class BaseDriver:
             history_messages_key="chat_history",
         )
         result = chain_with_history.invoke({"input": user_message})
-        logger.info(f"Simple chain result: {result}")
+
+        end_time = time.time()
+        duration = end_time - start_time
+
+        logger.info(f"耗时:[{duration:.4f}秒],回复[{trace_id}]: {result.content}")
         return result
 
     def chat_with_history(self, system_prompt: str, user_message: str,
                           message_history: Any, rag_content: str = "",
                           tools: List[str] = [],
-                          tools_args: Optional[Dict[str, Dict[str, Any]]] = None) -> str:
+                          tools_args: List[ToolsArgs] = [],
+                          trace_id: str = '') -> str:
         try:
             logger.info(f"System Prompt: {system_prompt}, User Message: {user_message},tools:{tools}")
 
@@ -90,7 +115,7 @@ class BaseDriver:
                 )
 
                 agent_prompt = ChatPromptTemplate.from_messages([
-                    ("system", self.AGENT_SYSTEM_TEMPLATE),
+                    ("system", self.agent_system_template),
                     ("human", "{input}"),
                     ("placeholder", "{agent_scratchpad}"),
                 ])
@@ -107,25 +132,30 @@ class BaseDriver:
                 logger.debug(f"Formatted Prompt:\n{formatted_prompt}")
 
                 with get_openai_callback() as cb:
-                    result = agent_executor(input_data)
-                    total_prompt_tokens += cb.prompt_tokens
-                    total_completion_tokens += cb.completion_tokens
-
-                    logger.info(
-                        f"Agent execution completed. Token usage - Input: {cb.prompt_tokens}, Output: {cb.completion_tokens}")
-
-                    tool_desc_map = {tool.name: tool.description for tool in requested_tools}
                     tools_result = ""
-                    for index, r in enumerate(result['intermediate_steps']):
-                        if r[0].tool in tool_desc_map:
-                            description = tool_desc_map.get(r[0].tool)
+                    thoughts_result = ""
+                    tool_desc_map = {tool.name: tool.description for tool in requested_tools}
+                    for index, step in enumerate(agent_executor.iter(input_data)):
+                        if 'output' in step:
+                            thoughts_result = step['output']
+                            continue
+
+                        start_time = time.time()
+                        if output := step.get("intermediate_step"):
+                            action, value = output[0]
+                            description = tool_desc_map.get(action.tool)
                             tools_result += f"""
                                step:{index}
-                                 tools name: {r[0].tool}
+                                 tools name: {action.tool}
                                  tools description: {description}
-                                 tools execute result: {r[1]}
+                                 tools execute result: {value}
                             """ + '\n'
-                            logger.info(f"Tool execution: {r[0].tool} - Result: {r[1]}")
+                        end_time = time.time()
+                        duration = end_time - start_time
+                        logger.info(f"工具执行耗时:[{duration:.4f}秒] [{trace_id}] 执行工具:{action.tool},结果:{value}")
+
+                    total_prompt_tokens += cb.prompt_tokens
+                    total_completion_tokens += cb.completion_tokens
 
                 if tools_result:
                     rag_content += f"""
@@ -136,20 +166,14 @@ class BaseDriver:
 
                     rag_content += f"""
                             <function_call_thought>
-                                {result['output']}
+                                {thoughts_result}
                             </function_call_thought>
                     """
 
-                simple_result = self._invoke_simple_chain(user_message, message_history, system_prompt, rag_content)
+                simple_result = self._invoke_simple_chain(user_message, message_history, system_prompt, rag_content,
+                                                          trace_id)
                 total_prompt_tokens += simple_result.usage_metadata['input_tokens']
                 total_completion_tokens += simple_result.usage_metadata['output_tokens']
-
-                logger.info(
-                    f"Final combined token usage:\n"
-                    f"Total Input Tokens: {total_prompt_tokens}\n"
-                    f"Total Output Tokens: {total_completion_tokens}\n"
-                    f"Total: {total_prompt_tokens + total_completion_tokens}"
-                )
 
                 return json.dumps({
                     "result": True,
@@ -160,16 +184,8 @@ class BaseDriver:
                     }
                 }, ensure_ascii=False, indent=4)
             else:
-                simple_result = self._invoke_simple_chain(user_message, message_history, system_prompt, rag_content)
-
-                logger.info(
-                    f"Chat Result Summary:\n"
-                    f"Request: {user_message}\n"
-                    f"Response: {simple_result.content}\n"
-                    f"Token Usage - Input: {simple_result.usage_metadata['input_tokens']}, "
-                    f"Output: {simple_result.usage_metadata['output_tokens']}, "
-                    f"Total: {simple_result.usage_metadata['total_tokens']}"
-                )
+                simple_result = self._invoke_simple_chain(user_message, message_history, system_prompt, rag_content,
+                                                          trace_id)
 
                 return json.dumps({
                     "result": True,

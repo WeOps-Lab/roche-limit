@@ -6,6 +6,8 @@ from loguru import logger
 from pydantic import create_model
 from pydantic.v1 import BaseModel, Field
 
+from apps.chat_server.user_types.tools_args import ToolsArgs
+
 
 def create_input_model(tool_config: Dict) -> Optional[type[BaseModel]]:
     """从工具配置创建输入模型"""
@@ -60,7 +62,7 @@ class ToolLoader:
                         }
 
     def get_tool_instance(self, tool_name: str,
-                          tools_args: Optional[Dict[str, Any]] = None):
+                          tools_args: List[ToolsArgs]):
 
         """根据工具名称创建工具实例"""
         if tool_name not in self._tools_metadata:
@@ -91,13 +93,12 @@ class ToolLoader:
 
     def get_tools(self,
                   tool_names: List[str],
-                  tools_args: Optional[Dict[str, Dict[str, Any]]] = None) -> List:
+                  tools_args: List[ToolsArgs]) -> List:
         """获取工具实例列表"""
         if not tool_names:
             return []
 
         tools = []
-        tools_args = tools_args or {}
 
         for name in tool_names:
             if instance := self.get_tool_instance(name, tools_args):
