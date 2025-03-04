@@ -21,6 +21,6 @@ class OpenAIChatRequest(CustomUserType):
     rag_context: Optional[str] = ''
     tools: Optional[List[str]]
 
-    tools_args: List[ToolsArgs]
+    tools_args: Optional[List[ToolsArgs]]
 
     trace_id: Optional[str] = str(uuid.uuid4())
