@@ -1,13 +1,14 @@
 import base64
+import tempfile
 from typing import List
 
 import cv2
 import numpy as np
-import torch
 from langchain_core.documents import Document
 from langchain_core.runnables import RunnableLambda
 from loguru import logger
 from modelscope import AutoModel, AutoTokenizer
+
 from apps.ocr_server.user_types.ocr_request import OcrRequest
 
 
@@ -21,9 +22,6 @@ class GotOcrRunnable:
         self.model = self.model.cuda()
 
     def execute(self, request: OcrRequest) -> List[Document]:
-        import tempfile
-        import os
-
         base_image = base64.b64decode(request.file)
         nparr = np.frombuffer(base_image, np.uint8)
 
@@ -37,10 +35,8 @@ class GotOcrRunnable:
             temp_path = temp_file.name
             cv2.imwrite(temp_path, img)
             logger.info(f"Image saved temporarily to {temp_path}")
-            res = self.model.chat(self.tokenizer, temp_path, ocr_type='format')
-            print(res)
-            # Process the image (add your processing code here)
-            # The file will be automatically deleted when the with block exits
+            recognized_texts = self.model.chat(self.tokenizer, temp_path, ocr_type='ocr')
+            return [Document(page_content=recognized_texts)]
 
         return []
 
