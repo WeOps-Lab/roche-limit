@@ -14,16 +14,11 @@ from apps.ocr_server.user_types.ocr_request import OcrRequest
 class GotOcrRunnable:
     def __init__(self):
         self.tokenizer = AutoTokenizer.from_pretrained('stepfun-ai/GOT-OCR2_0', trust_remote_code=True)
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.model = AutoModel.from_pretrained('stepfun-ai/GOT-OCR2_0', trust_remote_code=True, low_cpu_mem_usage=True,
-                                               device_map=device, use_safetensors=True,
+                                               device_map='cuda', use_safetensors=True,
                                                pad_token_id=self.tokenizer.eos_token_id)
         self.model = self.model.eval()
-        if device == 'cuda':
-            self.model = self.model.cuda()
-
-
-        logger.info(f"GOT-OCR model running on {device}")
+        self.model = self.model.cuda()
 
     def execute(self, request: OcrRequest) -> List[Document]:
         import tempfile
